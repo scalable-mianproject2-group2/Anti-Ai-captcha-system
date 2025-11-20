@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Animal Sound CAPTCHA</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #eef2ff;
+            display: flex;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .box {
+            width: 450px;
+            background: white;
+            padding: 25px;
+            border-radius: 14px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.25);
+        }
+        select, button {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 12px;
+            font-size: 16px;
+        }
+        button {
+            background: #6f2cff;
+            color: white;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #5820d9;
+        }
+        .result {
+            margin-top: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="box">
+
+    <h2>🎧 Animal Sound CAPTCHA</h2>
+
+    <form method="POST">
+        <button type="submit">Generate Animal Sound</button>
+    </form>
+
+    {% if audio_file %}
+        <audio controls style="width:100%; margin-top:15px;">
+            <source src="{{ url_for('serve_audio', filename=audio_file) }}" type="audio/mp3">
+        </audio>
+
+        <form method="POST" style="margin-top:15px;">
+            <input type="hidden" name="correct_animal" value="{{ correct_animal }}">
+            <select name="submitted_answer" required>
+                <option value="">Which animal sound was this?</option>
+                {% for a in animals %}
+                <option value="{{ a }}">{{ a.title() }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit">Verify</button>
+        </form>
+    {% endif %}
+
+    {% if result %}
+        <div class="result">{{ result }}</div>
+    {% endif %}
+
+</div>
+
+</body>
+</html>
