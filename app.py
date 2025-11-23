@@ -110,6 +110,13 @@ LOGO_LOCAL_PATH = "/mnt/data/90e31aee-1f9d-4aad-8d1e-028b74330272.png"
 
 app = Flask(__name__)
 
+# ====== ADD THESE VARIABLES ======
+import threading
+audio_play_lock = threading.Lock()
+audio_play_flag = False
+# =================================
+
+
 # In-memory store for AI results (simple; resets when server restarts)
 ai_store_lock = threading.Lock()
 ai_store = {"id": 0, "payload": None}
@@ -120,6 +127,7 @@ last_served = {"audio_file": None, "ground_truth": None}
 
 def clean_label(fname):
     base = os.path.splitext(os.path.basename(fname))[0]
+    base = base.split("_")[0]  
     label = "".join(ch if (ch.isalnum() or ch in "_-") else "_" for ch in base)
     return label.strip("_").lower()
 
@@ -236,6 +244,21 @@ def current_captcha():
     # build audio URL relative to server root
     audio_url = url_for('send_audio', filename=audio_file)
     return jsonify({"ok": True, "audio_file": audio_file, "ground_truth": ground_truth, "audio_url": audio_url})
+
+@app.route("/ai_trigger_audio", methods=["POST"])
+def ai_trigger_audio():
+    with audio_play_lock:
+        audio_play_flag["play"] = True
+    return jsonify({"ok": True})
+
+# GET returns & consumes flag
+@app.route("/should_play_audio", methods=["GET"])
+def should_play_audio():
+    with audio_play_lock:
+        play = audio_play_flag["play"]
+        audio_play_flag["play"] = False
+    return jsonify({"play": play})
+
 
 if __name__ == '__main__':
     # helpful log of server config

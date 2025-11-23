@@ -1,0 +1,8 @@
+filename,ground_truth,predicted,pred_prob,top3
+cat.mp3,cat,bird,0.5313,bird:0.5313;horse:0.2442;rooster:0.1449
+cow.mp3,cow,horse,0.4456,horse:0.4456;rooster:0.2927;dog:0.1950
+dog.mp3,dog,dog,0.9947,dog:0.9947;horse:0.0020;bird:0.0014
+horse.mp3,horse,horse,0.9929,horse:0.9929;dog:0.0024;bird:0.0019
+lion.mp3,lion,lion,0.9995,lion:0.9995;rooster:0.0002;dog:0.0001
+rooster.mp3,rooster,rooster,0.9950,rooster:0.9950;horse:0.0018;bird:0.0014
+‏bird.mp3,bird,bird,0.9945,bird:0.9945;horse:0.0019;dog:0.0017

@@ -334,6 +334,17 @@
                 window.location.reload();   // loads new CAPTCHA
             });
 
+            function pollForAudioPlay() {
+                $.get("/should_play_audio", function (res) {
+                    if (res.play) {
+                        let audio = document.getElementById('audio-player');
+                        if (audio) audio.play().catch(() => { /* play may be blocked depending on browser settings */ });
+                    }
+                    setTimeout(pollForAudioPlay, 800);
+                }).fail(function () { setTimeout(pollForAudioPlay, 1500); });
+            }
+            pollForAudioPlay();
+
 
             // show/hide modal utilities
             function showModal(resultText, predicted, ground_truth) {

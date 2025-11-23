@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Animal Sound CAPTCHA</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #eef2ff;
+            display: flex;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .box {
+            width: 450px;
+            background: white;
+            padding: 25px;
+            border-radius: 14px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.25);
+        }
+
+        select,
+        button {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 12px;
+            font-size: 16px;
+        }
+
+        button {
+            background: #6f2cff;
+            color: white;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #5820d9;
+        }
+
+        .result {
+            margin-top: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        /* Modal - hidden by default */
+        #modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(3px);
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        /* Modal dialog box */
+        #modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            width: 320px;
+            text-align: center;
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.25);
+        }
+
+        #modal-ok {
+            margin-top: 15px;
+            background: #6f2cff;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+        }
+
+        #modal-ok:hover {
+            background: #5820d9;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="box">
+        <h2>Animal Sound CAPTCHA</h2>
+
+        <!-- Audio player -->
+        <audio id="audio-player" controls style="width:100%; margin-top:15px;" autoplay>
+            <source src="{{ url_for('send_audio', filename=audio_file) }}" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+
+        <!-- <p><strong>Ground truth (for testing only):</strong> <span id="ground-truth">{{ ground_truth }}</span></p> -->
+
+        <!-- Human Dropdown: first option is empty/disabled -->
+        <form id="captcha-form">
+            <label for="dropdown">Select the animal sound:</label>
+            <select id="dropdown" name="selected">
+                <option value="" disabled selected>-- choose an option --</option>
+                {% for option in options %}
+                <option value="{{ option }}">{{ option }}</option>
+                {% endfor %}
+            </select>
+            <input type="hidden" name="ground_truth" value="{{ ground_truth }}">
+            <button type="submit" id="submit-btn">Verify</button>
+        </form>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal-overlay" class="modal-overlay" role="dialog" aria-modal="true">
+        <div class="modal" id="modal-content">
+            <div id="modal-text"></div>
+            <button id="modal-ok">OK</button>
+        </div>
+    </div>
+
+    <script>
+        $(function () {
+            // Helper to show modal with message
+            function showModal(message) {
+                $('#modal-text').text(message);
+                $('#modal-overlay').fadeIn(150);
+                $('#modal-ok').focus();
+            }
+            function hideModal() {
+                $('#modal-overlay').fadeOut(100);
+            }
+
+            // Human submission handler: displays modal with result and closes on OK once.
+            // (Still used for manual submissions.)
+            $('#captcha-form').submit(function (e) {
+                e.preventDefault();
+                var formData = $(this).serialize();
+                $.post("/check", formData, function (data) {
+                    showModal("Human submission result: " + data.result + "\nGround truth: " + data.ground_truth + "\nSelected: " + data.predicted);
+                });
+            });
+
+            // Modal OK button: just hide the modal and DO NOT change the dropdown or refresh the page.
+            $('#modal-ok').on('click', function () {
+                hideModal();
+            });
+
+            // Polling for AI results (server consumes payload once)
+            var last_id = 0;
+            function pollAI() {
+                $.get("/ai_result", { last_id: last_id }, function (resp) {
+                    if (resp.has_new) {
+                        last_id = resp.id;
+                        var d = resp.data;
+                        var predicted = d.predicted;
+
+                        // Overwrite the dropdown value with predicted (even if user selected something before)
+                        if ($('#dropdown option[value="' + predicted + '"]').length > 0) {
+                            $('#dropdown').val(predicted);
+                        } else {
+                            // Add temporary option (marked) and select it
+                            $('#dropdown').append($('<option>', { value: predicted, text: predicted, 'data-temp': '1' }));
+                            $('#dropdown').val(predicted);
+                        }
+
+                        // Automatically submit the form (AJAX) right after setting the dropdown.
+                        // This triggers the same /check endpoint and shows the popup with result.
+                        var formData = $('#captcha-form').serialize();
+                        $.post("/check", formData, function (data) {
+                            // Show the result returned by /check (should match AI evaluation)
+                            showModal("AI submission result: " + data.result + "\nGround truth: " + data.ground_truth + "\nPredicted: " + predicted);
+                            // Note: do NOT remove the predicted value from the dropdown; leave it so user may override manually
+                        }).fail(function () {
+                            // In case /check fails, still show the AI result from server payload
+                            showModal("AI submission (network error). Predicted: " + predicted);
+                        });
+                    }
+                    // schedule next poll
+                    setTimeout(pollAI, 1000);
+                }).fail(function () {
+                    // if error, try again later
+                    setTimeout(pollAI, 2000);
+                });
+            }
+
+            // start polling
+            pollAI();
+        });
+    </script>
+</body>
+
+</html>
