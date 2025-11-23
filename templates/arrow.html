@@ -57,10 +57,21 @@ document.getElementById("submit-btn").addEventListener("click", () => {
         status.innerText = "✅ Success!";
         status.style.color = "#00ff99";
 
+        /*
         // Redirect to audio CAPTCHA after success
         setTimeout(() => {
             window.location.href = "{{ url_for('audio_captcha') }}";
         }, 1000);
+        */
+
+        //zzw made changes 2025/11/23
+        // zzw: 原来成功后跳 audio，这里改成先跳 slider 验证码
+        setTimeout(() => {
+            window.location.href = "{{ url_for('slider_captcha') }}";
+        }, 1000);
+
+
+
     }
 
     // Log to backend

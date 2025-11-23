@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Slider Puzzle CAPTCHA</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='slider/slider.css') }}"
+    />
+  </head>
+  <body>
+    <div class="card">
+      <div class="title">Drag the slider to complete the puzzle</div>
+
+      <div class="puzzle-box">
+        <img id="bgImage" src="" alt="captcha" />
+        <div class="mask"></div>
+        <div id="hole" class="hole"></div>
+
+        <div id="pieceWrapper" class="piece-wrapper">
+          <div id="piece" class="piece"></div>
+        </div>
+      </div>
+
+      <div class="slider-area">
+        <input
+          type="range"
+          id="slider"
+          min="0"
+          max="240"
+          value="0"
+          class="slider-input"
+        />
+        <div class="btn-row">
+          <button id="verifyBtn" class="btn btn-primary">Verify</button>
+          <button id="refreshBtn" class="btn btn-secondary">
+            Refresh
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='slider/slider.js') }}"></script>
+  </body>
+</html>

@@ -17,8 +17,29 @@ def log_arrow():
     # after logging, redirect user to audio CAPTCHA
     return jsonify({"status": "ok"})
 
+# ---------- Slider CAPTCHA ----------
+@app.route("/slider", methods=["GET"])
+def slider_captcha():
+    # 第二个验证码：拼图滑块
+    return render_template("slider.html")
+
+
+@app.route("/slider/log", methods=["POST"])
+def log_slider():
+    data = request.get_json()
+    print("Slider CAPTCHA log:", data)
+    # 只返回 ok，前端可以在验证成功后跳转到 /audio
+    return jsonify({"status": "ok"})
+
+
+
 # ---------- Audio CAPTCHA ----------
-AUDIO_FOLDER = r"C:\Users\bvija\Documents\TCD_Subjects\Scalable Computing\project_02\animals"
+#AUDIO_FOLDER = r"C:\Users\bvija\Documents\TCD_Subjects\Scalable Computing\project_02\animals"
+
+#zzw made changes to this path
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+AUDIO_FOLDER = os.path.join(BASE_DIR, "animals")
+
 audio_play_lock = threading.Lock()
 audio_play_flag = {"play": False}
 

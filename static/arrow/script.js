@@ -137,7 +137,25 @@ function sendToServer() {
         body: JSON.stringify(payload)
     })
     .then(res => res.json())
+
+    /*
     .then(data => console.log("Logged:", data));
+        console.log("Logged:", data);
+    */
+
+    //-------zzw made changes 2025/11/23----------
+    .then(data => {
+    console.log("Logged:", data);
+
+    // zzw: Arrow 验证成功并判定为人类后，进入第二关 slider 验证码
+    if (aligned && isHuman) {
+        window.location.href = "/slider";
+    }
+})
+.catch(err => console.error("log error:", err));
+//------------------zzw made changes 2025/11/23-----------------
+
+
 
     // Reset user arrow
     currentAngle = 0;

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>猫砂验证码</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='cat/cat.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>🐱 铲猫砂验证</h1>
+        <div class="instructions">
+            <p>请从猫砂盆中<strong>移除所有块状物</strong></p>
+            <p>点击所有棕色的块状物来清理猫砂盆</p>
+            <p class="hint">已点击: <span id="clickCount">0</span> / <span id="totalClumps">0</span></p>
+        </div>
+        
+        <div class="captcha-container">
+            <div id="catLitterBox">
+                <!-- 猫砂盆将通过JavaScript动态生成 -->
+            </div>
+            
+            <div class="controls">
+                <button id="resetBtn">重新生成</button>
+                <button id="verifyBtn">验证</button>
+            </div>
+            
+            <div id="message" class="message"></div>
+        </div>
+        
+        <div class="navigation">
+            <a href="{{ url_for('arrow_captcha') }}">箭头验证</a>
+            <a href="{{ url_for('slider_captcha') }}">滑块验证</a>
+            <a href="{{ url_for('audio_captcha') }}">音频验证</a>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='cat/cat.js') }}"></script>
+</body>
+</html>
