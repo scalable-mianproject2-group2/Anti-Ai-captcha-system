@@ -108,3 +108,23 @@ button:hover {
     50% { box-shadow: 0 0 20px #00ff99; }
     100% { box-shadow: 0 0 5px #00ff99; }
 }
+
+
+/* small & right-aligned Next button similar to audio UI */
+.next-row { display:flex; justify-content:flex-end; margin: 10px 0 8px; }
+.next-btn {
+  background: #2eae4a;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  width: 110px;
+  box-shadow: 0 8px 20px rgba(46,174,74,0.12);
+}
+.next-btn:hover { transform: translateY(-1px); }
+
+/* optional small icon styling */
+.next-icon { width:36px; height:36px; margin-right:10px; border-radius:8px; object-fit:cover; }

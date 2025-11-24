@@ -105,6 +105,69 @@ def check():
                            result=result_msg,
                            logo_url=url_for('static', filename='images/audio.jpg'))
 
+
+@app.route('/ai_check', methods=['POST'])
+def ai_check():
+    # AI posts predicted result, confidence, top3
+    predicted = request.form.get('predicted', '')
+    ground_truth = request.form.get('ground_truth', '')
+    confidence = request.form.get('confidence', '')
+    top3 = request.form.get('top3', '')
+    result = "Success" if predicted == ground_truth else "Failure"
+    payload = {
+        "predicted": predicted,
+        "ground_truth": ground_truth,
+        "result": result,
+        "confidence": confidence,
+        "top3": top3
+    }
+    with ai_store_lock:
+        ai_store["id"] += 1
+        ai_store["payload"] = {"id": ai_store["id"], "data": payload}
+    return jsonify({"status": "ok", "id": ai_store["id"]})
+
+@app.route('/ai_result', methods=['GET'])
+def ai_result():
+    # Frontend polls this; returns and consumes stored AI payload
+    try:
+        last_seen = int(request.args.get('last_id', 0))
+    except Exception:
+        last_seen = 0
+    with ai_store_lock:
+        payload = ai_store.get("payload")
+        if payload and payload.get("id", 0) > last_seen:
+            out = {"has_new": True, "id": payload["id"], "data": payload["data"]}
+            ai_store["payload"] = None   # consume
+            return jsonify(out)
+    return jsonify({"has_new": False})
+
+# endpoints to let AI request the browser to play audio
+@app.route('/ai_trigger_audio', methods=['POST'])
+def ai_trigger_audio():
+    with audio_play_lock:
+        audio_play_flag["play"] = True
+    return jsonify({"ok": True})
+
+@app.route('/should_play_audio', methods=['GET'])
+def should_play_audio():
+    # frontend polls; returns and clears the flag (so it only triggers once)
+    with audio_play_lock:
+        play = audio_play_flag.get("play", False)
+        audio_play_flag["play"] = False
+    return jsonify({"play": play})
+
+# endpoint so AI can reliably ask which captcha file is currently shown
+@app.route('/current_captcha', methods=['GET'])
+def current_captcha():
+    with last_served_lock:
+        if last_served.get("audio_file") is None:
+            return jsonify({"ok": False, "message": "no captcha served yet"}), 404
+        audio_file = last_served["audio_file"]
+        ground_truth = last_served["ground_truth"]
+    audio_url = url_for('send_audio', filename=audio_file)
+    return jsonify({"ok": True, "audio_file": audio_file, "ground_truth": ground_truth, "audio_url": audio_url})
+
+
 @app.route('/animals/<path:filename>')
 def send_audio(filename):
     return send_from_directory(AUDIO_FOLDER, filename)

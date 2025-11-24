@@ -1,49 +1,514 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
+
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <title>Animal Sound CAPTCHA</title>
+
+    <!-- font + jQuery -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
     <style>
-        body { font-family: Arial; background: #eef2ff; display:flex; justify-content:center; padding:40px; }
-        .box { width:450px; background:white; padding:25px; border-radius:14px; box-shadow:0 5px 25px rgba(0,0,0,0.25);}
-        select, button { width:100%; padding:12px; border-radius:8px; margin-top:12px; font-size:16px;}
-        button { background:#6f2cff; color:white; font-weight:bold;}
-        button:hover { background:#5820d9; }
-        .result { margin-top:12px; font-size:18px; font-weight:bold; text-align:center;}
-        audio { width:100%; margin-top:15px; border-radius:8px; }
-        .logo { width:56px; height:56px; border-radius:12px; overflow:hidden; margin-bottom:12px; }
-        .logo img { width:100%; height:100%; object-fit:cover; }
+        :root {
+            --bg: #eef2ff;
+            --card: #fff;
+            --primary-start: #7b3cff;
+            --primary-end: #5b1fd9;
+            --accent: #6f2cff;
+            --success: #16a34a;
+            --danger: #ef4444;
+            --muted: #6b7280;
+            --radius: 14px;
+        }
+
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+            background: linear-gradient(180deg, #f7f9ff, #eef2ff);
+            color: #0f172a;
+        }
+
+        .wrap {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 36px;
+        }
+
+        .card {
+            width: min(520px, 96%);
+            background: var(--card);
+            border-radius: var(--radius);
+            box-shadow: 0 10px 30px rgba(16, 24, 40, 0.08);
+            padding: 18px 20px;
+            position: relative;
+            overflow: visible;
+        }
+
+        /* small top-right logo */
+        .card .logo {
+            position: absolute;
+            right: 18px;
+            top: -26px;
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 6px 18px rgba(99, 102, 241, 0.16);
+            border: 4px solid rgba(255, 255, 255, 0.8);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.2));
+        }
+
+        .card h1 {
+            margin: 0 0 8px;
+            margin-bottom: 6px;
+            font-size: 20px;
+            font-weight: 700;
+            color: #08112b;
+        }
+
+        .sub {
+            color: var(--muted);
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+
+        .audio-wrap {
+            margin: 10px 0 12px;
+            padding: 10px;
+            border-radius: 12px;
+        }
+
+        label {
+            margin-top: 8px;
+            margin-bottom: 6px;
+        }
+
+        audio {
+            width: 100%;
+            outline: none;
+            border-radius: 8px;
+        }
+
+        label {
+            display: block;
+            margin-top: 6px;
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        .next-row {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 8px;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px 14px;
+            margin-top: 8px;
+            margin-bottom: 8px;
+            border-radius: 10px;
+            border: 1px solid #e6e9f2;
+            font-size: 15px;
+            background: white;
+            box-shadow: inset 0 1px 0 rgba(16, 24, 40, 0.02);
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .btn {
+            display: inline-block;
+            width: 100%;
+            padding: 12px 14px;
+            margin-top: 10px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-weight: 700;
+            color: white;
+            font-size: 16px;
+            background: linear-gradient(90deg, var(--primary-start), var(--primary-end));
+            box-shadow: 0 8px 24px rgba(91, 31, 217, 0.14);
+            transition: transform .12s ease, box-shadow .12s ease;
+        }
+
+        .btn:active {
+            transform: translateY(1px) scale(.998);
+            box-shadow: 0 6px 16px rgba(91, 31, 217, 0.12);
+        }
+
+        .muted-note {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .next-btn {
+            background: #2eae4a;
+            /* green */
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            width: 110px;
+            /* small width */
+            box-shadow: 0 8px 20px rgba(46, 174, 74, 0.12);
+        }
+
+        .next-btn:hover {
+            background: #3e8e41;
+            transform: translateY(-1px);
+        }
+
+        /* Modal overlay + dialog (hidden by default) */
+        #modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.45);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal {
+            width: min(420px, 92%);
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 18px;
+            box-shadow: 0 18px 40px rgba(2, 6, 23, 0.18);
+            transform: translateY(8px) scale(.98);
+            opacity: 0;
+            transition: all 180ms cubic-bezier(.2, .9, .2, 1);
+        }
+
+        #modal-overlay.show .modal {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+        }
+
+        .modal h3 {
+            margin: 0 0 8px;
+            font-size: 18px;
+        }
+
+        .modal p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
+            white-space: pre-line;
+        }
+
+        .modal .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            margin-top: 12px;
+            font-weight: 700;
+        }
+
+        .badge.success {
+            background: rgba(22, 163, 74, 0.12);
+            color: var(--success);
+        }
+
+        .badge.fail {
+            background: rgba(239, 68, 68, 0.08);
+            color: var(--danger);
+        }
+
+        .modal .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+            justify-content: flex-end;
+        }
+
+        .modal .ok-btn {
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            background: linear-gradient(90deg, #14b8a6, #0ea5a0);
+            color: white;
+            font-weight: 700;
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.12);
+        }
+
+        .modal .close-btn {
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* small responsive tweak */
+        @media (max-width:420px) {
+            .card {
+                padding: 18px;
+                border-radius: 12px;
+            }
+
+            .logo {
+                width: 48px;
+                height: 48px;
+                right: 14px;
+                top: -18px;
+            }
+        }
     </style>
 </head>
+
 <body>
-<div class="box">
-    <div class="logo">
-        <img src="{{ logo_url }}" alt="logo">
+    <div class="wrap">
+        <div class="card">
+            <!-- logo uses the local uploaded image path; system will transform to URL when serving -->
+            <div class="logo">
+                <img src="{{ url_for('static', filename='images/audio.jpg') }}" alt="logo"
+                    style="width:100%;height:100%;object-fit:cover;" class="logo-img">
+            </div>
+
+            <h1>Animal Sound CAPTCHA</h1>
+            <div class="sub">Listen to the audio and select the correct animal from the dropdown.</div>
+
+            <div class="audio-wrap">
+                <audio id="audio-player" controls>
+                    <source src="{{ url_for('send_audio', filename=audio_file) }}" type="audio/mpeg">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+            <div class="next-row">
+                <button id="next-btn" type="button" class="next-btn">Next</button>
+            </div>
+
+            <form id="captcha-form">
+                <label for="dropdown">Select the animal sound:</label>
+                <select id="dropdown" name="selected">
+                    <option value="" disabled selected>-- choose an option --</option>
+                    {% for option in options %}
+                    <option value="{{ option }}">{{ option }}</option>
+                    {% endfor %}
+                </select>
+
+                <input type="hidden" name="ground_truth" value="{{ ground_truth }}">
+                <div id="result" style="display:none;">{{ result or "" }}</div>
+                <button class="btn" type="submit" id="submit-btn">Verify</button>
+
+
+                <div class="muted-note">You can replay the audio and then verify.</div>
+            </form>
+        </div>
     </div>
 
-    <h2>🎧 Animal Sound CAPTCHA</h2>
+    <!-- Modal overlay (hidden by default). JS toggles .show -->
+    <div id="modal-overlay" aria-hidden="true">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+            <h3 id="modal-title">Result</h3>
+            <p id="modal-message">Result text</p>
 
-    {% if audio_file %}
-        <audio controls>
-            <source src="{{ url_for('send_audio', filename=audio_file) }}" type="audio/mp3">
-            Your browser does not support the audio element.
-        </audio>
+            <div id="modal-badge" class="badge" style="display:inline-block; margin-top:12px;"></div>
 
-        <form method="POST" action="{{ url_for('check') }}" style="margin-top:15px;">
-            <input type="hidden" name="ground_truth" value="{{ ground_truth }}">
-            <select name="selected" required>
-                <option value="">Which animal sound was this?</option>
-                {% for a in options %}
-                <option value="{{ a }}">{{ a.title() }}</option>
-                {% endfor %}
-            </select>
-            <button type="submit">Verify</button>
-        </form>
-    {% endif %}
+            <div class="modal-actions">
+                <button class="close-btn" id="modal-close">Close</button>
+                <button class="ok-btn" id="modal-ok">OK</button>
+            </div>
+        </div>
+    </div>
 
-    {% if result %}
-        <div class="result">{{ result }}</div>
-    {% endif %}
-</div>
+    <script>
+        $(function () {
+
+            $('#next-btn').on('click', function () {
+                window.location.reload();   // loads new CAPTCHA
+            });
+
+            function pollForAudioPlay() {
+                $.get("/should_play_audio", function (res) {
+                    if (res.play) {
+                        let audio = document.getElementById('audio-player');
+                        if (audio) audio.play().catch(() => { /* play may be blocked depending on browser settings */ });
+                    }
+                    setTimeout(pollForAudioPlay, 800);
+                }).fail(function () { setTimeout(pollForAudioPlay, 1500); });
+            }
+            pollForAudioPlay();
+
+
+            // show/hide modal utilities
+            function showModal(message, predicted, ground_truth, showDetails) {
+                // message: primary text
+                // predicted, ground_truth: strings (may be empty)
+                // showDetails: boolean; when false we hide those fields entirely
+
+                $('#modal-message').text(message || '');
+
+                // Show/hide details area
+                if (showDetails) {
+                    // show the detail lines and populate them
+                    $('#modal-details').show();
+                    $('#modal-gt').text("Ground truth: " + (ground_truth || "unknown"));
+                    $('#modal-pred').text("Predicted: " + (predicted || "unknown"));
+                    // badge style based on success/failure in message text
+                    if ((message || '').toLowerCase().includes('success')) {
+                        $('#modal-badge').removeClass('fail').addClass('success').text('✓ Success').show();
+                    } else {
+                        $('#modal-badge').removeClass('success').addClass('fail').text('✕ Failure').show();
+                    }
+                } else {
+                    // hide the detail lines entirely for human submissions
+                    $('#modal-details').hide();
+                    $('#modal-badge').hide();
+                }
+
+                // show the modal
+                $('#modal-overlay').attr('aria-hidden', 'false').addClass('show').fadeIn(120);
+            }
+
+            function hideModal() {
+                $('#modal-overlay').removeClass('show').fadeOut(120, function () {
+                    $('#modal-overlay').attr('aria-hidden', 'true');
+                });
+            }
+
+            /* ---------- Human form submit (replace your current handler) ---------- */
+            $('#captcha-form').on('submit', function (e) {
+                e.preventDefault();
+
+                var form = this;
+                var formData = new FormData(form);
+                // user selection (human)
+                var selectedValue = $('#dropdown').val() || '';
+
+                fetch('/check', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'same-origin'
+                }).then(function (resp) {
+                    return resp.text(); // server returns rendered HTML page
+                }).then(function (htmlText) {
+                    // parse returned HTML to find result message if present
+                    var parser = new DOMParser();
+                    var doc = parser.parseFromString(htmlText, 'text/html');
+
+                    // find server-side result message (if present)
+                    var resultMsg = '';
+                    var resultEl = doc.querySelector('#result') || doc.querySelector('.result');
+                    if (resultEl) {
+                        resultMsg = resultEl.textContent.trim();
+                    } else {
+                        // fallback detection
+                        if (htmlText.indexOf('✅') !== -1 || /success/i.test(htmlText)) {
+                            resultMsg = '✅ Success!';
+                        } else if (htmlText.indexOf('❌') !== -1 || /incorrect/i.test(htmlText)) {
+                            resultMsg = '❌ Incorrect! Try again.';
+                        } else {
+                            resultMsg = 'Result updated';
+                        }
+                    }
+
+                    // FOR HUMAN: never show ground-truth or predicted in modal.
+                    // We still pass selectedValue if you want to log it, but we set showDetails=false.
+                    showModal("Human submission result: " + resultMsg, "", "", false);
+
+                }).catch(function (err) {
+                    console.error("Submit failed:", err);
+                    showModal("Human submission failed (network error).", "", "", false);
+                });
+            });
+
+            // Human submission handler
+            $('#captcha-form').on('submit', function (e) {
+                e.preventDefault();
+                var form = this;
+                var formData = new FormData(form);
+                var selectedValue = $('#dropdown').val() || '';
+
+                fetch('/check', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'same-origin'
+                }).then(function (resp) {
+                    return resp.text();
+                }).then(function (htmlText) {
+                    var parser = new DOMParser();
+                    var doc = parser.parseFromString(htmlText, 'text/html');
+
+                    // -- preferred: read a server-rendered element --
+                    var resultEl = doc.querySelector('#result') || doc.querySelector('.result');
+                    var resultMsg = resultEl ? resultEl.textContent.trim() : null;
+
+                    // extract ground truth (if server rendered it back to template)
+                    var groundInput = doc.querySelector('input[name="ground_truth"]');
+                    var groundTruth = groundInput && groundInput.value ? groundInput.value : '';
+
+                    // If server didn't render #result, use a safe fallback message (do NOT parse raw html)
+                    if (!resultMsg) {
+                        resultMsg = "Submission processed. (Reloaded view.)";
+                    }
+
+                    // For human submission we DO NOT show predicted/ground-truth details
+                    showModal("Human submission result: " + resultMsg, "", "", false);
+
+                }).catch(function (err) {
+                    console.error("Submit/parse failed:", err);
+                    showModal("Human submission failed (network error).", "", "", false);
+                });
+            });
+            // The modal close/ok buttons both simply hide the modal and leave dropdown value intact
+            $('#modal-close, #modal-ok').on('click', function () {
+                hideModal();
+            });
+
+            // Polling for AI results (server consumes payload once)
+            var last_id = 0;
+            function pollAI() {
+                $.get("/ai_result", { last_id: last_id }, function (resp) {
+                    if (resp.has_new) {
+                        last_id = resp.id;
+                        var d = resp.data;
+                        var predicted = d.predicted;
+                        var ground_truth = d.ground_truth;
+
+                        // Overwrite dropdown with predicted (same as before)
+                        if ($('#dropdown option[value="' + predicted + '"]').length > 0) {
+                            $('#dropdown').val(predicted);
+                        } else {
+                            $('#dropdown').append($('<option>', { value: predicted, text: predicted, 'data-temp': '1' }));
+                            $('#dropdown').val(predicted);
+                        }
+
+                        // Auto-submit to /check to get result (and show result on modal)
+                        var formData = $('#captcha-form').serialize();
+                        $.post("/check", formData, function (dataHtml) {
+                            // dataHtml is HTML => we already have AI info (d), so show modal with details visible
+                            // Show AI modal with details visible
+                            showModal("AI submission result: " + d.result, predicted, ground_truth, true);
+                        }).fail(function () {
+                            // If /check fails, still show AI modal using d
+                            showModal("AI submission (network error).", predicted, ground_truth, true);
+                        });
+                    }
+                    setTimeout(pollAI, 1000);
+                }).fail(function () {
+                    setTimeout(pollAI, 2000);
+                });
+            }
+            pollAI();
+        });
+    </script>
 </body>
+
 </html>
