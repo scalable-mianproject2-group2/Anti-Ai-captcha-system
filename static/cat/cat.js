@@ -435,7 +435,7 @@ class CatLitterCaptcha {
     
     async verifyCaptcha() {
         if (this.removedClumps < this.totalClumps) {
-            this.messageDiv.textContent = `还需要移除 ${this.totalClumps - this.removedClumps} 个块状物`;
+            this.messageDiv.textContent = `still need to remove ${this.totalClumps - this.removedClumps} item`;
             this.messageDiv.className = 'message error';
             return;
         }
@@ -457,7 +457,7 @@ class CatLitterCaptcha {
             const result = await response.json();
             
             if (result.status === 'ok') {
-                this.messageDiv.textContent = '猫砂清理完成！验证成功！';
+                this.messageDiv.textContent = 'success！';
                 this.messageDiv.className = 'message success';
                 
                 setTimeout(() => {
@@ -467,7 +467,7 @@ class CatLitterCaptcha {
             
         } catch (error) {
             console.error('验证失败:', error);
-            this.messageDiv.textContent = '验证失败，请重试';
+            this.messageDiv.textContent = 'failed, try again';
             this.messageDiv.className = 'message error';
         }
     }
