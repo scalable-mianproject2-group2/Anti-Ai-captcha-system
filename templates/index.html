@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Arrow Alignment CAPTCHA</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+
+<div class="captcha-box">
+    <h2>Align the Arrows to Prove You Are Human</h2>
+
+    <div class="arrows-wrapper">
+        <!-- Target Arrow -->
+        <div class="arrow-container">
+            <svg id="target-arrow">
+                <polygon points="90,20 110,90 90,70 70,90" fill="#ffeb3b" />
+            </svg>
+        </div>
+
+        <!-- User Arrow -->
+        <div class="arrow-container">
+            <svg id="user-arrow">
+                <polygon points="90,20 110,90 90,70 70,90" fill="#ff5722" />
+            </svg>
+        </div>
+    </div>
+
+    <div id="status"></div>
+
+    <button onclick="sendToServer()">Submit</button>
+</div>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
