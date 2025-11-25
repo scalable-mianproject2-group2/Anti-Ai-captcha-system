@@ -28,7 +28,7 @@ def slider_captcha():
 def log_slider():
     data = request.get_json()
     print("Slider CAPTCHA log:", data)
-    # 只返回 ok，前端可以在验证成功后跳转到 /audio
+    # 只返回 ok，前端可以在验证成功后跳转到 /cat /audio
     return jsonify({"status": "ok"})
 
 
@@ -41,6 +41,7 @@ def cat_captcha():
 def log_cat():
     data = request.get_json()
     print("Cat CAPTCHA log:", data)
+    # 只返回 ok，前端可以在验证成功后跳转到 /audio
     return jsonify({"status": "ok"})
 
 

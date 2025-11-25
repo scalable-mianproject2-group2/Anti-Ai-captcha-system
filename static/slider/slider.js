@@ -91,7 +91,8 @@ verifyBtn.addEventListener("click", function () {
 
   // 如果成功，这里跳到音频验证码
   if (ok) {
-    window.location.href = "/audio";
+    //window.location.href = "/audio";
+    window.location.href = "/cat";
   } else {
     // 失败直接刷新当前验证码
     initCaptcha();

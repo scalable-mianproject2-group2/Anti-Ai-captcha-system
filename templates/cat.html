@@ -1,41 +1,41 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>猫砂验证码</title>
+    <title>Cat Litter CAPTCHA</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='cat/cat.css') }}">
 </head>
 <body>
     <div class="container">
-        <h1>🐱 铲猫砂验证</h1>
+        <h1>🐱 Scoop the Cat Litter</h1>
         <div class="instructions">
-            <p>在猫砂盆中移动鼠标找出隐藏的块状物，然后<strong>拖动到垃圾桶</strong></p>
-            <p>流动的是猫砂，不动的就是需要移除的块状物</p>
-            <p class="hint">已移除: <span id="removedCount">0</span> / <span id="totalClumps">3</span></p>
+            <p>Move your mouse in the litter box to find hidden clumps, then <strong>drag them to the trash bin</strong></p>
+            <p>The moving particles are litter, the stationary ones are clumps that need to be removed</p>
+            <p class="hint">Removed: <span id="removedCount">0</span> / <span id="totalClumps">3</span></p>
         </div>
         
         <div class="captcha-container">
             <div class="litter-scene">
                 <canvas id="catLitterCanvas" width="500" height="300"></canvas>
                 <div id="trashBin" class="trash-bin">
-                    🗑️ 垃圾桶
+                    🗑️ Trash Bin
                 </div>
             </div>
             
             <div class="controls">
-                <button id="resetBtn">重新开始</button>
-                <button id="verifyBtn">验证</button>
+                <button id="resetBtn">Restart</button>
+                <button id="verifyBtn">Verify</button>
             </div>
             
             <div id="message" class="message"></div>
         </div>
         
         <div class="navigation">
-            <a href="{{ url_for('arrow_captcha') }}">箭头验证</a>
-            <a href="{{ url_for('slider_captcha') }}">滑块验证</a>
-            <a href="{{ url_for('audio_captcha') }}">音频验证</a>
+            <a href="{{ url_for('arrow_captcha') }}">Arrow CAPTCHA</a>
+            <a href="{{ url_for('slider_captcha') }}">Slider CAPTCHA</a>
+            <a href="{{ url_for('audio_captcha') }}">Audio CAPTCHA</a>
         </div>
     </div>
 
