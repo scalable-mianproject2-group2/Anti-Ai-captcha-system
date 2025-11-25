@@ -8,7 +8,7 @@ if defined _OLD_CODEPAGE (
     "%SystemRoot%\System32\chcp.com" 65001 > nul
 )
 
-set VIRTUAL_ENV=F:\aaatcd\scalableComputing\Anti-Ai-captcha-system\Anti-Ai-captcha-system\venv
+set VIRTUAL_ENV=D:\TCD Notes and assignments\Scalable computing\MainProject2\zi code 2\Anti-Ai-captcha-system\venv
 
 if not defined PROMPT set PROMPT=$P$G
 
