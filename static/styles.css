@@ -19,7 +19,7 @@ body {
 
 /* CAPTCHA box */
 .captcha-box {
-    background: rgba(0,0,0,0.9);
+    background: linear-gradient(135deg, rgb(0,0,0), #2a5298, #6a11cb);;
     padding: 40px 60px;
     border-radius: 20px;
     text-align: center;
@@ -79,6 +79,8 @@ svg {
     font-size: 18px;
     min-height: 24px;
 }
+
+
 
 /* Button styling */
 button {
