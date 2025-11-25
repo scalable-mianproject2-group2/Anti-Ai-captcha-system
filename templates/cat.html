@@ -11,18 +11,21 @@
     <div class="container">
         <h1>🐱 铲猫砂验证</h1>
         <div class="instructions">
-            <p>请从猫砂盆中<strong>移除所有块状物</strong></p>
-            <p>点击所有棕色的块状物来清理猫砂盆</p>
-            <p class="hint">已点击: <span id="clickCount">0</span> / <span id="totalClumps">0</span></p>
+            <p>在猫砂盆中移动鼠标找出隐藏的块状物，然后<strong>拖动到垃圾桶</strong></p>
+            <p>流动的是猫砂，不动的就是需要移除的块状物</p>
+            <p class="hint">已移除: <span id="removedCount">0</span> / <span id="totalClumps">3</span></p>
         </div>
         
         <div class="captcha-container">
-            <div id="catLitterBox">
-                <!-- 猫砂盆将通过JavaScript动态生成 -->
+            <div class="litter-scene">
+                <canvas id="catLitterCanvas" width="500" height="300"></canvas>
+                <div id="trashBin" class="trash-bin">
+                    🗑️ 垃圾桶
+                </div>
             </div>
             
             <div class="controls">
-                <button id="resetBtn">重新生成</button>
+                <button id="resetBtn">重新开始</button>
                 <button id="verifyBtn">验证</button>
             </div>
             

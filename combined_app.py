@@ -32,6 +32,20 @@ def log_slider():
     return jsonify({"status": "ok"})
 
 
+# ---------- Cat Litter CAPTCHA ----------
+@app.route("/cat", methods=["GET"])
+def cat_captcha():
+    return render_template("cat.html")
+
+@app.route("/cat/log", methods=["POST"])
+def log_cat():
+    data = request.get_json()
+    print("Cat CAPTCHA log:", data)
+    return jsonify({"status": "ok"})
+
+
+
+
 
 # ---------- Audio CAPTCHA ----------
 #AUDIO_FOLDER = r"C:\Users\bvija\Documents\TCD_Subjects\Scalable Computing\project_02\animals"

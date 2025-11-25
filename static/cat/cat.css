@@ -1,98 +1,63 @@
 /* 猫砂验证码样式 */
-#catLitterBox {
-    width: 320px;
-    height: 320px;
-    background: linear-gradient(45deg, #e6d2b5 25%, #d4b98a 25%, #d4b98a 50%, #e6d2b5 50%, #e6d2b5 75%, #d4b98a 75%);
-    background-size: 20px 20px;
-    border: 3px solid #8b4513;
-    border-radius: 15px;
-    position: relative;
+.litter-scene {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
     margin: 20px auto;
-    cursor: pointer;
-    box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
+    padding: 20px;
+    gap: 30px;
 }
 
-/* 块状物样式 */
-.clump {
-    position: absolute;
-    background: linear-gradient(135deg, #8b4513, #654321);
-    border-radius: 50%;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border: 2px solid #5a3820;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+#catLitterCanvas {
+    border: 3px solid #d0d0d0;
+    border-radius: 15px;
+    cursor: default;
+    background: #f8f8f8;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.clump:hover {
-    transform: scale(1.1);
-    box-shadow: 0 0 15px rgba(139, 69, 19, 0.7);
-}
-
-.clump.removed {
-    opacity: 0.3;
-    transform: scale(0.5);
-    background: #a52a2a;
-}
-
-/* 干扰物样式 */
-.distraction {
-    position: absolute;
-    transition: all 0.3s ease;
-}
-
-.distraction.cat {
-    width: 40px;
-    height: 25px;
+/* 垃圾桶样式 */
+.trash-bin {
+    width: 100px;
+    height: 120px;
     background: linear-gradient(135deg, #666, #888);
-    border-radius: 50% 50% 40% 40%;
-    position: relative;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+    border: 3px solid #555;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
-.distraction.cat::before,
-.distraction.cat::after {
-    content: '';
+.trash-bin:hover {
+    background: linear-gradient(135deg, #777, #999);
+    transform: translateY(-2px);
+}
+
+.trash-bin.receiving {
+    animation: pulse 0.5s ease-in-out;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* 被拖动的块状物 */
+.clump-dragging {
     position: absolute;
-    top: -8px;
-    width: 12px;
-    height: 12px;
-    background: #666;
-    border-radius: 50%;
-    box-shadow: inset -2px -2px 2px rgba(0, 0, 0, 0.2);
-}
-
-.distraction.cat::before {
-    left: 5px;
-}
-
-.distraction.cat::after {
-    right: 5px;
-}
-
-.distraction.cat::after {
-    right: 5px;
-}
-
-.distraction.toy {
-    width: 25px;
-    height: 25px;
-    background: radial-gradient(circle at 30% 30%, #ff6b6b, #ff5252);
-    border-radius: 50%;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
-}
-
-.distraction.food {
-    width: 20px;
-    height: 20px;
-    background: radial-gradient(circle at 30% 30%, #ffd700, #ffa500);
-    border-radius: 20% 50% 50% 20%;
-    transform: rotate(45deg);
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
-}
-
-.distraction:hover {
-    transform: scale(1.1);
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.9;
+    border: 2px dashed rgba(255, 100, 100, 0.8);
+    border-radius: 8px;
 }
 
 .controls {
@@ -110,32 +75,10 @@
     cursor: pointer;
     font-size: 16px;
     font-weight: bold;
-    transition: all 0.3s ease;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-.controls button:hover {
-    transform: translateY(-2px);
-    box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.3);
-}
-
-.controls button:active {
-    transform: translateY(0);
-}
-
-.controls button:disabled {
-    background: #cccccc;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
 }
 
 #resetBtn {
     background: linear-gradient(135deg, #ff6b6b, #ff5252);
-}
-
-#resetBtn:hover {
-    background: linear-gradient(135deg, #ff5252, #ff0000);
 }
 
 .message {
@@ -150,13 +93,11 @@
 .message.success {
     background-color: #d4edda;
     color: #155724;
-    border: 1px solid #c3e6cb;
 }
 
 .message.error {
     background-color: #f8d7da;
     color: #721c24;
-    border: 1px solid #f5c6cb;
 }
 
 .hint {
@@ -165,34 +106,7 @@
     margin-top: 10px;
 }
 
-#clickCount {
+#removedCount, #totalClumps {
     font-weight: bold;
     color: #8b4513;
-}
-
-#totalClumps {
-    font-weight: bold;
-    color: #8b4513;
-}
-
-/* 点击效果 */
-.click-effect {
-    position: absolute;
-    width: 10px;
-    height: 10px;
-    background: rgba(255, 255, 255, 0.8);
-    border-radius: 50%;
-    pointer-events: none;
-    animation: clickAnimation 0.6s ease-out;
-}
-
-@keyframes clickAnimation {
-    0% {
-        transform: scale(1);
-        opacity: 1;
-    }
-    100% {
-        transform: scale(3);
-        opacity: 0;
-    }
 }
