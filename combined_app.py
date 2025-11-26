@@ -2,7 +2,7 @@ import os
 import random
 import threading
 import json, time
-from flask import Flask, render_template, request, jsonify, send_from_directory, url_for, redirect
+from flask import Flask, render_template, request, jsonify, send_from_directory, url_for, redirect, make_response
 
 app = Flask(__name__)
 
@@ -21,7 +21,7 @@ def log_arrow():
 # ---------- Slider CAPTCHA ----------
 @app.route("/slider", methods=["GET"])
 def slider_captcha():
-    # 第二个验证码：拼图滑块
+    
     return render_template("slider.html")
 
 
@@ -29,30 +29,13 @@ def slider_captcha():
 def log_slider():
     data = request.get_json()
     print("Slider CAPTCHA log:", data)
-    # 只返回 ok，前端可以在验证成功后跳转到 /cat /audio
+    
     return jsonify({"status": "ok"})
-
-
-# ---------- Cat Litter CAPTCHA ----------
-@app.route("/cat", methods=["GET"])
-def cat_captcha():
-    return render_template("cat.html")
-
-@app.route("/cat/log", methods=["POST"])
-def log_cat():
-    data = request.get_json()
-    print("Cat CAPTCHA log:", data)
-    # 只返回 ok，前端可以在验证成功后跳转到 /audio
-    return jsonify({"status": "ok"})
-
-
 
 
 
 # ---------- Audio CAPTCHA ----------
-#AUDIO_FOLDER = r"C:\Users\bvija\Documents\TCD_Subjects\Scalable Computing\project_02\animals"
 
-#zzw made changes to this path
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 AUDIO_FOLDER = os.path.join(BASE_DIR, "animals")
 
@@ -101,7 +84,7 @@ def check():
 
     # Determine result message
     if selected == ground_truth:
-        result_msg = "✅ Success!"
+        result_msg = "Success!"
         # Serve a new random audio file
         selected_file = random.choice(audio_files)
         ground_truth = clean_label(selected_file)
@@ -109,7 +92,7 @@ def check():
             last_served["audio_file"] = selected_file
             last_served["ground_truth"] = ground_truth
     else:
-        result_msg = "❌ Incorrect! Try again."
+        result_msg = "Incorrect! Try again."
         with last_served_lock:
             selected_file = last_served["audio_file"]
             ground_truth = last_served["ground_truth"]
@@ -160,33 +143,43 @@ def ai_result():
 # endpoints to let AI request the browser to play audio
 @app.route('/ai_trigger_audio', methods=['POST'])
 def ai_trigger_audio():
-    """AI calls this to request the page play the currently-served captcha audio.
-       Returns the audio filename/url and an id so client and solver agree."""
     with last_served_lock:
         if not last_served.get("audio_file"):
-            return jsonify({"ok": False, "message": "no captcha served"}), 404
-        audio_file = last_served["audio_file"]
-        ground_truth = last_served["ground_truth"]
+            # No captcha yet in this process – create one
+            selected_file = random.choice(audio_files)
+            ground_truth = clean_label(selected_file)
+            last_served["audio_file"] = selected_file
+            last_served["ground_truth"] = ground_truth
+            audio_file = selected_file
+        else:
+            audio_file = last_served["audio_file"]
+            ground_truth = last_served["ground_truth"]
 
-    # set play flag and attach an id (so browser can ignore duplicate triggers)
     with audio_play_lock:
         audio_play_flag["play"] = True
-        audio_play_flag["id"] = time.time()  # unique-ish id
+        audio_play_flag["id"] = time.time()
 
     audio_url = url_for('send_audio', filename=audio_file, _external=True)
-    return jsonify({"ok": True, "audio_file": audio_file, "audio_url": audio_url, "id": audio_play_flag["id"], "ground_truth": ground_truth})
+    return jsonify({
+        "ok": True,
+        "audio_file": audio_file,
+        "audio_url": audio_url,
+        "id": audio_play_flag["id"],
+        "ground_truth": ground_truth
+    })
+
 
 @app.route('/should_play_audio', methods=['GET'])
 def should_play_audio():
     with audio_play_lock:
         play = audio_play_flag.get("play", False)
         aid = audio_play_flag.get("id", None)
-        # once returned, clear play flag so the client doesn't re-handle it repeatedly
+        
         audio_play_flag["play"] = False
         audio_play_flag["id"] = None
     return jsonify({"play": bool(play), "id": aid})
 
-# endpoint so AI can reliably ask which captcha file is currently shown
+
 @app.route('/current_captcha', methods=['GET'])
 def current_captcha():
     with last_served_lock:
@@ -206,29 +199,33 @@ def bot_signal():
     except Exception:
         return jsonify({"ok": False, "error": "bad json"}), 400
 
-    # compute a simple rule-based suspicion score
+    
     score = 0.0
-    # rules (tune as you collect data)
+    
     t_submit = data.get('time_to_submit_ms', 999999)
     mouse_count = data.get('mouse_samples_count', 0)
     audio_delay = data.get('audio_play_delay_ms', -1)
     focus_changes = data.get('focus_changes', 0)
     avg_speed = data.get('mouse_avg_speed', 0.0)
 
-    if t_submit < 300:           # too-fast submit
+    if t_submit < 300:          
         score += 2.0
-    if mouse_count < 3:          # almost no mouse movement
+    if mouse_count < 3:         
         score += 1.0
-    if 0 <= audio_delay < 100:   # audio played immediately (very low)
+    if 0 <= audio_delay < 100:  
         score += 1.0
     if focus_changes > 2:
         score += 0.8
     if avg_speed < 0.01:
         score += 0.6
 
-    suspect = score >= 1.5
 
-    # Save raw payload + meta to ndjson for offline analysis / training
+    if data.get("via_ai_flag"):
+        suspect = True
+    else:
+        suspect = score >= 1.5
+
+    
     try:
         out = {
             "ts": time.time(),
@@ -242,8 +239,9 @@ def bot_signal():
         # logging failure shouldn't break the flow
         print("Failed to write bot_signals:", e)
 
-    # If the client sent a cookie request to set "human verified", let it know (we handle cookie client-side)
+   
     return jsonify({"suspect": bool(suspect), "score": float(score)})
+
 
 @app.route('/animals/<path:filename>')
 def send_audio(filename):

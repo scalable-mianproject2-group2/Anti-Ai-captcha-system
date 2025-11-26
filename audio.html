@@ -327,6 +327,17 @@
         </div>
     </div>
 
+    <div id="ai-alert" role="dialog" aria-live="polite">
+        <div style="display:flex; align-items:center;">
+            <span class="ai-badge">AI</span>
+            <h4>AI-like behaviour detected</h4>
+        </div>
+        <p id="ai-alert-text">We detected activity that looks automated. Click Verify to confirm you are human.</p>
+        <div class="ai-actions">
+            <button class="ai-btn dismiss" id="ai-dismiss">Ignore</button>
+            <button class="ai-btn verify" id="ai-verify">Verify</button>
+        </div>
+    </div>
 
     <script>
         $(function () {
@@ -334,22 +345,6 @@
             $('#next-btn').on('click', function () {
                 window.location.reload();   // loads new CAPTCHA
             });
-
-            // -------- defender toast helper (AI-only) ----------
-            // -------- defender toast helper (AI-only) ----------
-            function showAIAlert() {
-                console.log("showAIAlert() called");  // debug log
-
-                var el = document.getElementById('ai-alert');
-                if (!el) {
-                    console.warn('ai-alert element not found');
-                    return;
-                }
-                el.style.display = 'block';
-            }
-            // make available to defender block (second <script>)
-            window.showAIAlert = showAIAlert;
-
 
             var last_seen_play_id = null;
             function pollForAudioPlay() {
@@ -367,41 +362,20 @@
                             }
 
                             // show popup locally if unverified (fast)
-                            showAIAlert();
+                            try {
+                                if (document.cookie.indexOf('hum_verified=1') === -1) {
+                                    var el = document.getElementById('ai-alert');
+                                    if (el) el.style.display = 'block';
+                                }
+                            } catch (e) { }
 
                             // Play the currently-rendered audio element (visible to user)
-                           
                             var audio = document.getElementById("audio-player");
                             if (audio) {
-                                // ensure file is loaded from start
-                                try {
-                                    audio.load();
-                                    audio.currentTime = 0;
-                                } catch (e) {
-                                    console.warn("audio load/currentTime failed:", e);
-                                }
-
-                                // first attempt — normal play
-                                audio.play().then(() => {
-                                    console.log("audio.play() started from AI trigger");
-                                }).catch(err => {
-                                    console.warn("audio.play() blocked by autoplay policy:", err);
-
-                                    // fallback attempt — muted autoplay (often allowed)
-                                    try {
-                                        audio.muted = true;
-                                        audio.play().then(() => {
-                                            console.log("muted autoplay succeeded; unmuting now");
-                                            audio.muted = false;
-                                        }).catch(e2 => {
-                                            console.warn("even muted autoplay blocked — user gesture required");
-                                        });
-                                    } catch (e2) {
-                                        console.warn("muted autoplay attempt failed:", e2);
-                                    }
+                                audio.play().then(() => console.log("audio.play() started")).catch(err => {
+                                    console.warn("audio.play() blocked:", err);
                                 });
                             }
-
                         }
                     } catch (err) {
                         console.warn("pollForAudioPlay error:", err);
@@ -420,9 +394,9 @@
                 // style badge based on success/failure text
                 var badge = $('#modal-badge');
                 if ((resultText || '').toLowerCase().includes('success')) {
-                    badge.removeClass('fail').addClass('success').text('✓ AI Result : Success').show();
+                    badge.removeClass('fail').addClass('success').text('✓ Success').show();
                 } else {
-                    badge.removeClass('success').addClass('fail').text('✕ AI Result : Failure').show();
+                    badge.removeClass('success').addClass('fail').text('✕ Failure').show();
                 }
 
                 $('#modal-overlay').attr('aria-hidden', 'false').addClass('show').fadeIn(120);
@@ -430,75 +404,40 @@
 
 
             // show/hide modal utilities
-            // improved accessible show/hide modal helpers
-            // Accessible modal show/hide helpers — GLOBAL so defender code can call them
-            function showModal(message) {
-                const overlay = document.getElementById('modal-overlay');
-                const content = overlay ? overlay.querySelector('.modal') : null;
-                const ok = document.getElementById('modal-ok');
-                const close = document.getElementById('modal-close');
-                const text = document.getElementById('modal-message');
+            function showModal(message, predicted, ground_truth, showDetails) {
+                // message: primary text
+                // predicted, ground_truth: strings (may be empty)
+                // showDetails: boolean; when false we hide those fields entirely
 
-                if (!overlay || !content || !ok || !text) {
-                    console.warn('Modal elements missing');
-                    return;
+                $('#modal-message').text(message || '');
+
+                // Show/hide details area
+                if (showDetails) {
+                    // show the detail lines and populate them
+                    $('#modal-details').show();
+                    $('#modal-gt').text("Ground truth: " + (ground_truth || "unknown"));
+                    $('#modal-pred').text("Predicted: " + (predicted || "unknown"));
+                    // badge style based on success/failure in message text
+                    if ((message || '').toLowerCase().includes('success')) {
+                        $('#modal-badge').removeClass('fail').addClass('success').text('✓ Success').show();
+                    } else {
+                        $('#modal-badge').removeClass('success').addClass('fail').text('✕ Failure').show();
+                    }
+                } else {
+                    // hide the detail lines entirely for human submissions
+                    $('#modal-details').hide();
+                    $('#modal-badge').hide();
                 }
 
-                // set message text
-                text.textContent = message;
-
-                // show overlay and mark accessible
-                overlay.style.display = 'block';
-                overlay.classList.add('show');
-                overlay.setAttribute('aria-hidden', 'false');
-
-                // make content focusable and move focus
-                if (!content.hasAttribute('tabindex')) content.setAttribute('tabindex', '-1');
-
-                setTimeout(() => {
-                    try { ok.focus({ preventScroll: true }); } catch (e) { ok.focus(); }
-                }, 10);
-
-                overlay._onKey = function (e) {
-                    if (e.key === 'Escape') hideModal();
-                };
-                document.addEventListener('keydown', overlay._onKey);
+                // show the modal
+                $('#modal-overlay').attr('aria-hidden', 'false').addClass('show').fadeIn(120);
             }
 
             function hideModal() {
-                const overlay = document.getElementById('modal-overlay');
-                if (!overlay) return;
-
-                // move focus off the button before hiding to avoid the aria-hidden warning
-                const ok = document.getElementById('modal-ok');
-                if (document.activeElement === ok) {
-                    ok.blur();
-                }
-
-                overlay.style.display = 'none';
-                overlay.classList.remove('show');
-                overlay.setAttribute('aria-hidden', 'true');
-
-                if (overlay._onKey) {
-                    document.removeEventListener('keydown', overlay._onKey);
-                    delete overlay._onKey;
-                }
+                $('#modal-overlay').removeClass('show').fadeOut(120, function () {
+                    $('#modal-overlay').attr('aria-hidden', 'true');
+                });
             }
-
-            // expose globally so the defender IIFE can call these
-            window.showModal = showModal;
-            window.hideModal = hideModal;
-
-
-            // === ADD THESE RIGHT AFTER THE HELPERS ===
-            document.getElementById('modal-ok').addEventListener('click', function () {
-                hideModal();
-            });
-
-            document.getElementById('modal-close').addEventListener('click', function () {
-                hideModal();
-            });
-
 
             /* ---------- Human form submit (replace your current handler) ---------- */
             $('#captcha-form').on('submit', function (e) {
@@ -536,7 +475,8 @@
                         }
                     }
 
-                    
+                    // FOR HUMAN: never show ground-truth or predicted in modal.
+                    // We still pass selectedValue if you want to log it, but we set showDetails=false.
                     showModal("Human submission result: " + resultMsg, "", "", false);
 
                 }).catch(function (err) {
@@ -599,10 +539,6 @@
 
                         // mark AI and notify defender immediately
                         window.__aiTriggered = true;
-
-                        // show DEFENDER toast immediately when AI is detected
-                        showAIAlert();
-
                         console.log("AI detected — sending defender signal");
                         if (typeof sendSignalAndMaybeAlert === 'function') sendSignalAndMaybeAlert('ai_submit');
 
@@ -619,8 +555,6 @@
                         $.post("/check", formData, function (data) {
                             // show AI result modal only with success/failure (your modal code can be used here)
                             showSimpleResult(data.result === 'Success' ? 'Success' : 'Failure');
-                            // showModal("AI submission result: " + aiResultLabel);
-
                         }).fail(function () {
                             // even if /check fails, show the defender popup based on server-side scoring
                             // (sendSignalAndMaybeAlert already requested score; but if you want, show local fallback)
@@ -637,9 +571,9 @@
     </script>
 
 
-    <!-- ===== Defender UI & collector  ===== -->
+    <!-- ===== Defender UI & collector — PASTE BEFORE </body> ===== -->
     <style>
-        
+        /* non-blocking AI alert */
         #ai-alert {
             position: fixed;
             right: 18px;
@@ -710,7 +644,7 @@
         </div>
         <p id="ai-alert-text">We detected activity that looks automated. Click Verify to confirm you are human.</p>
         <div class="ai-actions">
-            <button class="ai-btn dismiss" id="ai-dismiss">Not Human</button>
+            <button class="ai-btn dismiss" id="ai-dismiss">Ignore</button>
             <button class="ai-btn verify" id="ai-verify">Verify</button>
         </div>
     </div>
@@ -791,30 +725,17 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload),
                     credentials: 'same-origin'
-                })
-                    .then(r => r.json())
+                }).then(r => r.json())
                     .then(function (resp) {
+                        // if (resp && resp.suspect) {
+                        if (resp.suspect) {
+                            var el = document.getElementById('ai-alert');
+                            if (el && getCookie('hum_verified') !== '1') el.style.display = 'block';
+                        }
                         console.log('bot_signal resp:', resp);
-
-                        if (resp && resp.suspect) {
-                            if (getCookie('hum_verified') !== '1') {
-                                // use defender toast instead of result modal
-                                if (window.showAIAlert) {
-                                    window.showAIAlert();
-                                }
-                            } else {
-                                console.log('hum_verified cookie present; skipping defender popup');
-                            }
-                        }
-
-                        else {
-                            console.log('server did not mark suspect (score:', resp.score, ')');
-                        }
-                    })
-                    .catch(function (err) {
+                    }).catch(function (err) {
                         console.warn('bot_signal failed', err);
                     });
-
             }
 
             // hook into important moments:
