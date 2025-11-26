@@ -255,6 +255,7 @@
             cursor: pointer;
         }
 
+
         /* small responsive tweak */
         @media (max-width:420px) {
             .card {
@@ -291,7 +292,7 @@
                 </audio>
             </div>
             <div class="next-row">
-                <button id="next-btn" type="button" class="next-btn">Next</button>
+                <button id="next-btn" type="button" class="next-btn">Refresh</button>
             </div>
 
             <form id="captcha-form">
@@ -314,19 +315,18 @@
     </div>
 
     <!-- Modal overlay (hidden by default). JS toggles .show -->
-    <div id="modal-overlay" aria-hidden="true">
+    <div id="modal-overlay" aria-hidden="true" style="display:none;">
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
             <h3 id="modal-title">Result</h3>
-            <p id="modal-message">Result text</p>
-
-            <div id="modal-badge" class="badge" style="display:inline-block; margin-top:12px;"></div>
-
-            <div class="modal-actions">
+            <p id="modal-message" style="font-size:16px; font-weight:600;"></p>
+            <div id="modal-badge" class="badge" style="display:none; margin-top:12px;"></div>
+            <div class="modal-actions" style="margin-top:14px;">
                 <button class="close-btn" id="modal-close">Close</button>
                 <button class="ok-btn" id="modal-ok">OK</button>
             </div>
         </div>
     </div>
+
 
     <script>
         $(function () {
@@ -335,53 +335,170 @@
                 window.location.reload();   // loads new CAPTCHA
             });
 
+            // -------- defender toast helper (AI-only) ----------
+            // -------- defender toast helper (AI-only) ----------
+            function showAIAlert() {
+                console.log("showAIAlert() called");  // debug log
+
+                var el = document.getElementById('ai-alert');
+                if (!el) {
+                    console.warn('ai-alert element not found');
+                    return;
+                }
+                el.style.display = 'block';
+            }
+            // make available to defender block (second <script>)
+            window.showAIAlert = showAIAlert;
+
+
+            var last_seen_play_id = null;
             function pollForAudioPlay() {
-                $.get("/should_play_audio", function (res) {
-                    if (res.play) {
-                        let audio = document.getElementById('audio-player');
-                        if (audio) audio.play().catch(() => { /* play may be blocked depending on browser settings */ });
+                $.get("/should_play_audio", {}, function (res) {
+                    try {
+                        if (res && res.play && res.id && res.id !== last_seen_play_id) {
+                            last_seen_play_id = res.id;
+
+                            // mark as AI triggered so the payload will include via_ai_flag
+                            window.__aiTriggered = true;
+
+                            // send defender signal immediately
+                            if (typeof sendSignalAndMaybeAlert === 'function') {
+                                try { sendSignalAndMaybeAlert('ai_trigger'); } catch (e) { console.warn('defender send failed', e); }
+                            }
+
+                            // show popup locally if unverified (fast)
+                            showAIAlert();
+
+                            // Play the currently-rendered audio element (visible to user)
+                           
+                            var audio = document.getElementById("audio-player");
+                            if (audio) {
+                                // ensure file is loaded from start
+                                try {
+                                    audio.load();
+                                    audio.currentTime = 0;
+                                } catch (e) {
+                                    console.warn("audio load/currentTime failed:", e);
+                                }
+
+                                // first attempt — normal play
+                                audio.play().then(() => {
+                                    console.log("audio.play() started from AI trigger");
+                                }).catch(err => {
+                                    console.warn("audio.play() blocked by autoplay policy:", err);
+
+                                    // fallback attempt — muted autoplay (often allowed)
+                                    try {
+                                        audio.muted = true;
+                                        audio.play().then(() => {
+                                            console.log("muted autoplay succeeded; unmuting now");
+                                            audio.muted = false;
+                                        }).catch(e2 => {
+                                            console.warn("even muted autoplay blocked — user gesture required");
+                                        });
+                                    } catch (e2) {
+                                        console.warn("muted autoplay attempt failed:", e2);
+                                    }
+                                });
+                            }
+
+                        }
+                    } catch (err) {
+                        console.warn("pollForAudioPlay error:", err);
+                    } finally {
+                        setTimeout(pollForAudioPlay, 800);
                     }
-                    setTimeout(pollForAudioPlay, 800);
                 }).fail(function () { setTimeout(pollForAudioPlay, 1500); });
             }
             pollForAudioPlay();
 
 
-            // show/hide modal utilities
-            function showModal(message, predicted, ground_truth, showDetails) {
-                // message: primary text
-                // predicted, ground_truth: strings (may be empty)
-                // showDetails: boolean; when false we hide those fields entirely
+            function showSimpleResult(resultText) {
+                // resultText should be "Success" or "Failure" (or include those words)
+                $('#modal-message').text(resultText);
 
-                $('#modal-message').text(message || '');
-
-                // Show/hide details area
-                if (showDetails) {
-                    // show the detail lines and populate them
-                    $('#modal-details').show();
-                    $('#modal-gt').text("Ground truth: " + (ground_truth || "unknown"));
-                    $('#modal-pred').text("Predicted: " + (predicted || "unknown"));
-                    // badge style based on success/failure in message text
-                    if ((message || '').toLowerCase().includes('success')) {
-                        $('#modal-badge').removeClass('fail').addClass('success').text('✓ Success').show();
-                    } else {
-                        $('#modal-badge').removeClass('success').addClass('fail').text('✕ Failure').show();
-                    }
+                // style badge based on success/failure text
+                var badge = $('#modal-badge');
+                if ((resultText || '').toLowerCase().includes('success')) {
+                    badge.removeClass('fail').addClass('success').text('✓ AI Result : Success').show();
                 } else {
-                    // hide the detail lines entirely for human submissions
-                    $('#modal-details').hide();
-                    $('#modal-badge').hide();
+                    badge.removeClass('success').addClass('fail').text('✕ AI Result : Failure').show();
                 }
 
-                // show the modal
                 $('#modal-overlay').attr('aria-hidden', 'false').addClass('show').fadeIn(120);
             }
 
-            function hideModal() {
-                $('#modal-overlay').removeClass('show').fadeOut(120, function () {
-                    $('#modal-overlay').attr('aria-hidden', 'true');
-                });
+
+            // show/hide modal utilities
+            // improved accessible show/hide modal helpers
+            // Accessible modal show/hide helpers — GLOBAL so defender code can call them
+            function showModal(message) {
+                const overlay = document.getElementById('modal-overlay');
+                const content = overlay ? overlay.querySelector('.modal') : null;
+                const ok = document.getElementById('modal-ok');
+                const close = document.getElementById('modal-close');
+                const text = document.getElementById('modal-message');
+
+                if (!overlay || !content || !ok || !text) {
+                    console.warn('Modal elements missing');
+                    return;
+                }
+
+                // set message text
+                text.textContent = message;
+
+                // show overlay and mark accessible
+                overlay.style.display = 'block';
+                overlay.classList.add('show');
+                overlay.setAttribute('aria-hidden', 'false');
+
+                // make content focusable and move focus
+                if (!content.hasAttribute('tabindex')) content.setAttribute('tabindex', '-1');
+
+                setTimeout(() => {
+                    try { ok.focus({ preventScroll: true }); } catch (e) { ok.focus(); }
+                }, 10);
+
+                overlay._onKey = function (e) {
+                    if (e.key === 'Escape') hideModal();
+                };
+                document.addEventListener('keydown', overlay._onKey);
             }
+
+            function hideModal() {
+                const overlay = document.getElementById('modal-overlay');
+                if (!overlay) return;
+
+                // move focus off the button before hiding to avoid the aria-hidden warning
+                const ok = document.getElementById('modal-ok');
+                if (document.activeElement === ok) {
+                    ok.blur();
+                }
+
+                overlay.style.display = 'none';
+                overlay.classList.remove('show');
+                overlay.setAttribute('aria-hidden', 'true');
+
+                if (overlay._onKey) {
+                    document.removeEventListener('keydown', overlay._onKey);
+                    delete overlay._onKey;
+                }
+            }
+
+            // expose globally so the defender IIFE can call these
+            window.showModal = showModal;
+            window.hideModal = hideModal;
+
+
+            // === ADD THESE RIGHT AFTER THE HELPERS ===
+            document.getElementById('modal-ok').addEventListener('click', function () {
+                hideModal();
+            });
+
+            document.getElementById('modal-close').addEventListener('click', function () {
+                hideModal();
+            });
+
 
             /* ---------- Human form submit (replace your current handler) ---------- */
             $('#captcha-form').on('submit', function (e) {
@@ -419,13 +536,12 @@
                         }
                     }
 
-                    // FOR HUMAN: never show ground-truth or predicted in modal.
-                    // We still pass selectedValue if you want to log it, but we set showDetails=false.
+                    
                     showModal("Human submission result: " + resultMsg, "", "", false);
 
                 }).catch(function (err) {
                     console.error("Submit failed:", err);
-                    showModal("Human submission failed (network error).", "", "", false);
+                    showModal("Human submission failed.", "", "", false);
                 });
             });
 
@@ -464,7 +580,7 @@
 
                 }).catch(function (err) {
                     console.error("Submit/parse failed:", err);
-                    showModal("Human submission failed (network error).", "", "", false);
+                    showModal("Human submission failed.", "", "", false);
                 });
             });
             // The modal close/ok buttons both simply hide the modal and leave dropdown value intact
@@ -480,9 +596,17 @@
                         last_id = resp.id;
                         var d = resp.data;
                         var predicted = d.predicted;
-                        var ground_truth = d.ground_truth;
 
-                        // Overwrite dropdown with predicted (same as before)
+                        // mark AI and notify defender immediately
+                        window.__aiTriggered = true;
+
+                        // show DEFENDER toast immediately when AI is detected
+                        showAIAlert();
+
+                        console.log("AI detected — sending defender signal");
+                        if (typeof sendSignalAndMaybeAlert === 'function') sendSignalAndMaybeAlert('ai_submit');
+
+                        // set dropdown to predicted
                         if ($('#dropdown option[value="' + predicted + '"]').length > 0) {
                             $('#dropdown').val(predicted);
                         } else {
@@ -490,15 +614,17 @@
                             $('#dropdown').val(predicted);
                         }
 
-                        // Auto-submit to /check to get result (and show result on modal)
+                        // auto-submit (existing behaviour)
                         var formData = $('#captcha-form').serialize();
-                        $.post("/check", formData, function (dataHtml) {
-                            // dataHtml is HTML => we already have AI info (d), so show modal with details visible
-                            // Show AI modal with details visible
-                            showModal("AI submission result: " + d.result, predicted, ground_truth, true);
+                        $.post("/check", formData, function (data) {
+                            // show AI result modal only with success/failure (your modal code can be used here)
+                            showSimpleResult(data.result === 'Success' ? 'Success' : 'Failure');
+                            // showModal("AI submission result: " + aiResultLabel);
+
                         }).fail(function () {
-                            // If /check fails, still show AI modal using d
-                            showModal("AI submission (network error).", predicted, ground_truth, true);
+                            // even if /check fails, show the defender popup based on server-side scoring
+                            // (sendSignalAndMaybeAlert already requested score; but if you want, show local fallback)
+                            showSimpleResult('Failure (network)');
                         });
                     }
                     setTimeout(pollAI, 1000);
@@ -509,6 +635,214 @@
             pollAI();
         });
     </script>
+
+
+    <!-- ===== Defender UI & collector  ===== -->
+    <style>
+        
+        #ai-alert {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            width: 320px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 18px 40px rgba(8, 10, 30, 0.12);
+            padding: 14px;
+            display: none;
+            z-index: 9999;
+            font-family: Arial, sans-serif;
+        }
+
+        #ai-alert h4 {
+            margin: 0 0 6px 0;
+            font-size: 16px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        #ai-alert p {
+            margin: 0 0 8px 0;
+            color: #555;
+            font-size: 13px;
+        }
+
+        .ai-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 8px;
+        }
+
+        .ai-btn {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .ai-btn.verify {
+            background: #2e7d32;
+            color: white;
+        }
+
+        .ai-btn.dismiss {
+            background: #e5e7eb;
+            color: #111;
+        }
+
+        .ai-badge {
+            display: inline-block;
+            padding: 6px 8px;
+            border-radius: 999px;
+            background: #fde68a;
+            color: #92400e;
+            font-weight: 700;
+            margin-right: 8px;
+        }
+    </style>
+
+    <div id="ai-alert" role="dialog" aria-live="polite">
+        <div style="display:flex; align-items:center;">
+            <span class="ai-badge">AI</span>
+            <h4>AI-like behaviour detected</h4>
+        </div>
+        <p id="ai-alert-text">We detected activity that looks automated. Click Verify to confirm you are human.</p>
+        <div class="ai-actions">
+            <button class="ai-btn dismiss" id="ai-dismiss">Not Human</button>
+            <button class="ai-btn verify" id="ai-verify">Verify</button>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            // cookie helpers
+            function setCookie(name, value, days) {
+                var d = new Date(); d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+                document.cookie = name + "=" + encodeURIComponent(value) + ";path=/;expires=" + d.toUTCString();
+            }
+            function getCookie(name) {
+                var v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+                return v ? decodeURIComponent(v.pop()) : null;
+            }
+
+            // collector state
+            window.__pageLoadTs = Date.now();
+            window.__audioPlayTs = null;
+            window.__firstMouseMove = null;
+            window.__mouseSamplesCount = 0;
+            window.__mouseStart = null;
+            window.__mouseLastTs = null;
+            window.__mouseSumSpeed = 0;
+            window.__focusChanges = 0;
+            window.__playEvents = 0;
+            window.__aiTriggered = false; // set true when AI run detected (see below)
+            const audio = document.getElementById('audio-player');
+
+            // mouse sampling (lightweight)
+            document.addEventListener('mousemove', function (e) {
+                var t = Date.now() - window.__pageLoadTs;
+                if (!window.__firstMouseMove) window.__firstMouseMove = t;
+                window.__mouseSamplesCount++;
+                if (!window.__mouseStart) window.__mouseStart = t;
+                if (window.__mouseLastTs) {
+                    var dt = (t - window.__mouseLastTs) || 1;
+                    var last = window.__lastMousePos || [e.clientX, e.clientY];
+                    var dx = e.clientX - last[0], dy = e.clientY - last[1];
+                    var dist = Math.sqrt(dx * dx + dy * dy);
+                    window.__mouseSumSpeed += dist / dt;
+                }
+                window.__lastMousePos = [e.clientX, e.clientY];
+                window.__mouseLastTs = t;
+            }, { passive: true });
+
+            // audio play
+            if (audio) audio.addEventListener('play', function () {
+                if (!window.__audioPlayTs) window.__audioPlayTs = Date.now() - window.__pageLoadTs;
+                window.__playEvents++;
+            });
+
+            // visibility
+            document.addEventListener('visibilitychange', function () {
+                if (document.hidden) window.__focusChanges++;
+            });
+
+            // main send function
+            function sendSignalAndMaybeAlert(eventLabel) {
+                if (getCookie('hum_verified') === '1') return; // user already verified
+                var now = Date.now();
+                var payload = {
+                    page_load_ts: window.__pageLoadTs,
+                    audio_play_delay_ms: window.__audioPlayTs !== null ? window.__audioPlayTs : -1,
+                    first_mouse_move_ms: window.__firstMouseMove !== null ? window.__firstMouseMove : -1,
+                    time_to_submit_ms: now - window.__pageLoadTs,
+                    mouse_samples_count: window.__mouseSamplesCount,
+                    mouse_duration_ms: window.__mouseStart ? ((window.__mouseLastTs || 0) - window.__mouseStart) : 0,
+                    mouse_avg_speed: window.__mouseSamplesCount > 0 ? (window.__mouseSumSpeed / window.__mouseSamplesCount) : 0,
+                    focus_changes: window.__focusChanges,
+                    play_events: window.__playEvents,
+                    via_ai_flag: !!window.__aiTriggered,
+                    event: eventLabel || ''
+                };
+
+                fetch('/bot_signal', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                    credentials: 'same-origin'
+                })
+                    .then(r => r.json())
+                    .then(function (resp) {
+                        console.log('bot_signal resp:', resp);
+
+                        if (resp && resp.suspect) {
+                            if (getCookie('hum_verified') !== '1') {
+                                // use defender toast instead of result modal
+                                if (window.showAIAlert) {
+                                    window.showAIAlert();
+                                }
+                            } else {
+                                console.log('hum_verified cookie present; skipping defender popup');
+                            }
+                        }
+
+                        else {
+                            console.log('server did not mark suspect (score:', resp.score, ')');
+                        }
+                    })
+                    .catch(function (err) {
+                        console.warn('bot_signal failed', err);
+                    });
+
+            }
+
+            // hook into important moments:
+            if (audio) audio.addEventListener('play', function () { sendSignalAndMaybeAlert('audio_play'); });
+            var form = document.getElementById('captcha-form');
+            if (form) {
+                form.addEventListener('submit', function (e) {
+                    setTimeout(function () { sendSignalAndMaybeAlert('submit'); }, 100);
+                });
+            }
+
+            // Expose for manual trigger from other code (AI handler)
+            window.sendSignalAndMaybeAlert = sendSignalAndMaybeAlert;
+
+            // popup buttons
+            document.getElementById('ai-verify').addEventListener('click', function () {
+                setCookie('hum_verified', '1', 30);
+                document.getElementById('ai-alert').style.display = 'none';
+            });
+            document.getElementById('ai-dismiss').addEventListener('click', function () {
+                document.getElementById('ai-alert').style.display = 'none';
+            });
+
+        })();
+    </script>
+    <!-- ===== end defender block ===== -->
+
+
 </body>
 
 </html>

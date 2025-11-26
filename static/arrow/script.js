@@ -105,13 +105,13 @@ function sendToServer() {
 
     // Show result to user
     if(!aligned) {
-        status.innerText = "❌ Failed alignment!";
+        status.innerText = "Failed alignment!";
         status.style.color = "#ff5555";
     } else if(aligned && !isHuman) {
-        status.innerText = "⚠️ Likely AI detected!";
+        status.innerText = "Likely AI detected!";
         status.style.color = "#ffb74d";
     } else {
-        status.innerText = "✅ Success!";
+        status.innerText = "Success!";
         status.style.color = "#00ff99";
 
         document.querySelector('.captcha-box').classList.add('success-glow');
@@ -138,22 +138,17 @@ function sendToServer() {
     })
     .then(res => res.json())
 
-    /*
-    .then(data => console.log("Logged:", data));
-        console.log("Logged:", data);
-    */
 
-    //-------zzw made changes 2025/11/23----------
     .then(data => {
     console.log("Logged:", data);
 
-    // zzw: Arrow 验证成功并判定为人类后，进入第二关 slider 验证码
+    
     if (aligned && isHuman) {
         window.location.href = "/slider";
     }
 })
 .catch(err => console.error("log error:", err));
-//------------------zzw made changes 2025/11/23-----------------
+
 
 
 

@@ -10,7 +10,7 @@
 <body>
 
     <div class="captcha-box">
-        <h2>Align the Arrows to Prove You Are Human</h2>
+        <h2>Align the Orange Arrow to solve the captcha</h2>
 
         <div class="arrows-wrapper">
             <div class="arrow-container">
@@ -30,7 +30,7 @@
         <button id="submit-btn">Submit</button>
 
         <div class="next-row">
-            <button id="next-btn" class="next-btn" type="button">Next</button>
+            <button id="next-btn" class="next-btn" type="button">Refresh</button>
         </div>
     </div>
 
@@ -54,24 +54,16 @@
             const isHuman = score <= humanThreshold;
 
             if (!aligned) {
-                status.innerText = "❌ Failed alignment!";
+                status.innerText = "Failed alignment!";
                 status.style.color = "#ff5555";
             } else if (aligned && !isHuman) {
-                status.innerText = "⚠️ Likely AI detected!";
+                status.innerText = "Likely AI detected!";
                 status.style.color = "#ffb74d";
             } else {
-                status.innerText = "✅ Success!";
+                status.innerText = "Success!";
                 status.style.color = "#00ff99";
 
-                /*
-                // Redirect to audio CAPTCHA after success
-                setTimeout(() => {
-                    window.location.href = "{{ url_for('audio_captcha') }}";
-                }, 1000);
-                */
 
-                //zzw made changes 2025/11/23
-                // zzw: 原来成功后跳 audio，这里改成先跳 slider 验证码
                 setTimeout(() => {
                     window.location.href = "{{ url_for('slider_captcha') }}";
                 }, 1000);
