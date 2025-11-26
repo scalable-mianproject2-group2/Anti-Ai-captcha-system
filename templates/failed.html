@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>CAPTCHA Failed</title>
+</head>
+<body style="text-align:center; background:#eef2ff; padding:50px;">
+    <h2>{{ message }}</h2>
+    <img src="{{ url_for('static', filename='images/failed.png') }}" alt="Failed" style="max-width:300px;">
+</body>
+</html>

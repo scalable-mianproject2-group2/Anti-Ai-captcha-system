@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Arrow Alignment CAPTCHA</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='arrow/styles.css') }}">
+</head>
+
+<body>
+
+    <div class="captcha-box">
+        <h2>Align the Orange Arrow to solve the captcha</h2>
+
+        <div class="arrows-wrapper">
+            <div class="arrow-container">
+                <svg id="target-arrow">
+                    <polygon points="90,20 110,90 90,70 70,90" fill="#ffeb3b" />
+                </svg>
+            </div>
+            <div class="arrow-container">
+                <svg id="user-arrow">
+                    <polygon points="90,20 110,90 90,70 70,90" fill="#ff5722" />
+                </svg>
+            </div>
+        </div>
+
+        <div id="status"></div>
+
+        <button id="submit-btn">Submit</button>
+
+        <div class="next-row">
+            <button id="next-btn" class="next-btn" type="button">Refresh</button>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='arrow/script.js') }}"></script>
+    <script>
+        document.getElementById("submit-btn").addEventListener("click", () => {
+            const reactionTime = Date.now() - startTime;
+
+            const diff = Math.abs(currentAngle - targetAngle) % 360;
+            const distance = diff > 180 ? 360 - diff : diff;
+            const aligned = distance <= 10;
+
+            // AI scoring
+            let score = 0;
+            if (reactionTime < 200) score += 1;
+            if (pathComplexity(movementHistory) < 5) score += 1;
+            if (overshootCount(movementHistory, targetAngle) === 0) score += 1;
+            if (speedVariance(movementHistory) < 0.01) score += 1;
+
+            const humanThreshold = 2;
+            const isHuman = score <= humanThreshold;
+
+            if (!aligned) {
+                status.innerText = "Failed alignment!";
+                status.style.color = "#ff5555";
+            } else if (aligned && !isHuman) {
+                status.innerText = "Likely AI detected!";
+                status.style.color = "#ffb74d";
+            } else {
+                status.innerText = "Success!";
+                status.style.color = "#00ff99";
+
+
+                setTimeout(() => {
+                    window.location.href = "{{ url_for('slider_captcha') }}";
+                }, 1000);
+
+
+
+            }
+
+            // Log to backend
+            const payload = {
+                target_angle: targetAngle,
+                final_angle: currentAngle,
+                movement_trace: movementHistory,
+                reaction_time_ms: reactionTime,
+                ai_score: score,
+                isHuman: isHuman,
+                aligned: aligned
+            };
+
+            fetch("{{ url_for('log_arrow') }}", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+        });
+        
+        // Next button: just refresh the page to get a new arrow captcha
+        document.getElementById('next-btn').addEventListener('click', function () {
+            // simple reload => server will serve a new random arrow
+            window.location.reload();
+        });
+
+    </script>
+</body>
+
+</html>
