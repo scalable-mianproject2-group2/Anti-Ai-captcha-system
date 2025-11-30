@@ -32,7 +32,17 @@ def log_slider():
     
     return jsonify({"status": "ok"})
 
+# ---------- Cat Litter CAPTCHA ----------
+@app.route("/cat", methods=["GET"])
+def cat_captcha():
+    return render_template("cat.html")
 
+@app.route("/cat/log", methods=["POST"])
+def log_cat():
+    data = request.get_json()
+    print("Cat CAPTCHA log:", data)
+    # 只返回 ok，前端可以在验证成功后跳转到 /audio
+    return jsonify({"status": "ok"})
 
 # ---------- Audio CAPTCHA ----------
 
