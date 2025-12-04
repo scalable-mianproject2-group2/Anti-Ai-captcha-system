@@ -466,7 +466,7 @@ class CatLitterCaptcha {
             }
             
         } catch (error) {
-            console.error('验证失败:', error);
+            console.error('failed:', error);
             this.messageDiv.textContent = 'failed, try again';
             this.messageDiv.className = 'message error';
         }
