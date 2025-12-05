@@ -19,6 +19,7 @@ def log_arrow():
     return jsonify({"status": "ok"})
 
 # ---------- Slider CAPTCHA ----------
+#ziwei zhao
 @app.route("/slider", methods=["GET"])
 def slider_captcha():
     
@@ -33,6 +34,7 @@ def log_slider():
     return jsonify({"status": "ok"})
 
 # ---------- Cat Litter CAPTCHA ----------
+#ziwei zhao
 @app.route("/cat", methods=["GET"])
 def cat_captcha():
     return render_template("cat.html")
