@@ -1,3 +1,8 @@
+# ---------------------------------------
+# SECTION: slider captcha attacker
+# CONTRIBUTOR: ziwei zhao
+# DESCRIPTION: slider captcha attacker
+# ---------------------------------------
 import time
 import cv2
 import numpy as np

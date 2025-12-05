@@ -1,3 +1,9 @@
+# ---------------------------------------
+# SECTION: cat captcha attacker
+# CONTRIBUTOR: ziwei zhao
+# DESCRIPTION: cat captcha attacker
+# ---------------------------------------
+
 import cv2
 import numpy as np
 import time
