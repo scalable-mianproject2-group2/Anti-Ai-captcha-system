@@ -1,4 +1,8 @@
-// 与 Flutter 版本保持一致的参数
+/* ---------------------------------------
+ * SECTION: slider captcha js
+ * CONTRIBUTOR: ziwei zhao
+ * DESCRIPTION: slider captcha js
+ * --------------------------------------- */
 const BOX_W = 300;
 const BOX_H = 200;
 const PIECE_SIZE = 60;

@@ -1,3 +1,10 @@
+
+# ---------------------------------------
+# SECTION: cat captcha attacker
+# CONTRIBUTOR: ziwei zhao
+# DESCRIPTION: cat captcha attacker
+# ---------------------------------------
+
 import cv2
 import numpy as np
 import time
@@ -544,7 +551,7 @@ class CatLitterCaptchaSolver:
                 # 6. 验证结果
                 time.sleep(2)  # 等待页面更新
                 if self.verify_solution():
-                    self.logger.info("🎉 CAPTCHA solved successfully!")
+                    self.logger.info("CAPTCHA solved successfully!")
                     self.driver.quit()
                     return True
                 elif success_count >= 2:  # 假设至少需要移除2个块状物

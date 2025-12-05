@@ -1,3 +1,9 @@
+# ---------------------------------------
+# SECTION: slider attacker2
+# CONTRIBUTOR: ziwei zhao
+# DESCRIPTION: slider attacker2
+# ---------------------------------------
+
 import time
 import cv2
 import numpy as np
