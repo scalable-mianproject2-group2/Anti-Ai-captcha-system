@@ -1,3 +1,8 @@
+# ---------------------------------------
+# SECTION: slider captcha attacker3
+# CONTRIBUTOR: ziwei zhao
+# DESCRIPTION: slider captcha attacker
+# ---------------------------------------
 import time
 import random
 import cv2
@@ -213,10 +218,10 @@ class RealSliderSolver:
         try:
             success_element = self.driver.find_element(By.CSS_SELECTOR, ".geetest_success_radar_tip")
             if success_element.is_displayed():
-                print("✅ 验证码破解成功!")
+                print("验证码破解成功!")
                 return True
         except:
-            print("❌ 验证码破解失败")
+            print("验证码破解失败")
             return False
     
     def run(self):
@@ -229,9 +234,9 @@ class RealSliderSolver:
             success = self.solve_captcha()
             
             if success:
-                print("🎉 任务完成!")
+                print(" 任务完成!")
             else:
-                print("💥 破解失败，可能需要调整算法")
+                print(" 破解失败，可能需要调整算法")
                 
             # 保持浏览器打开以便查看结果
             input("按Enter键关闭浏览器...")
