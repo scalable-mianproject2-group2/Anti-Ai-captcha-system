@@ -1,0 +1,87 @@
+<!-- templates/index.html -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Audio CAPTCHA Challenge</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; }
+    button { padding: 8px 12px; margin: 8px; }
+    .status { margin-top: 12px; }
+    .ok { color: green; }
+    .err { color: red; }
+  </style>
+</head>
+<body>
+  <h1>Audio CAPTCHA Challenge</h1>
+  <div>
+    <button id="newBtn">New Challenge</button>
+    <button id="playBtn" disabled>Play Audio</button>
+    <button id="predictBtn" disabled>Detect Captcha </button>
+  </div>
+
+  <div id="info" class="status"></div>
+
+  <audio id="audio" controls style="display:block; margin-top:12px;"></audio>
+
+  <script>
+    let currentId = null;
+    let currentGT = null;
+    const newBtn = document.getElementById("newBtn");
+    const playBtn = document.getElementById("playBtn");
+    const predictBtn = document.getElementById("predictBtn");
+    const audioEl = document.getElementById("audio");
+    const info = document.getElementById("info");
+
+    function show(msg, cls="") {
+      info.innerHTML = msg;
+      info.className = cls;
+    }
+
+    newBtn.onclick = async () => {
+      show("Requesting new challenge...");
+      const res = await fetch("/challenge");
+      const j = await res.json();
+      currentId = j.id;
+      currentGT = j.label;
+      // set audio src
+      audioEl.src = `/audio/${encodeURIComponent(currentId)}`;
+      playBtn.disabled = false;
+      predictBtn.disabled = false;
+      show(`Loaded: <strong>${currentId}</strong> — (ground truth: <em>${currentGT}</em>)`);
+    };
+
+    playBtn.onclick = () => {
+      if (!audioEl.src) return;
+      audioEl.play();
+    };
+
+    predictBtn.onclick = async () => {
+      if (!currentId) {
+        show("No challenge loaded", "err");
+        return;
+      }
+      show("Running model...");
+      const res = await fetch("/predict", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({id: currentId})
+      });
+      const j = await res.json();
+      if (j.error) {
+        show("Error: " + j.error, "err");
+        return;
+      }
+      const ok = j.correct;
+      const colorClass = ok ? "ok" : "err";
+      show(
+        `Prediction: <strong>${j.prediction}</strong> ` +
+        `(raw: "${j.prediction_raw}")<br>` +
+        `Ground truth: <strong>${j.ground_truth}</strong><br>` +
+        `<span class="${colorClass}">${ok ? "MATCH" : "MISMATCH"}</span><br>` +
+        `Running accuracy (session): ${(j.running_accuracy*100).toFixed(2)}%`
+      , colorClass);
+    };
+  </script>
+</body>
+</html>
