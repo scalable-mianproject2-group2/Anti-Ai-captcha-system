@@ -1,3 +1,10 @@
+/* ---------------------------------------
+ * SECTION: slider captcha js
+ * CONTRIBUTOR: ziwei zhao
+ * DESCRIPTION: js
+ * --------------------------------------- */
+
+
 // 与 Flutter 版本保持一致的参数
 const BOX_W = 300;
 const BOX_H = 200;

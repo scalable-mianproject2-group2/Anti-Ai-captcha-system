@@ -1,3 +1,10 @@
+/* ---------------------------------------
+ * SECTION: cat little captcha js
+ * CONTRIBUTOR: ziwei zhao
+ * DESCRIPTION: js
+ * --------------------------------------- */
+
+
 class CatLitterCaptcha {
     constructor() {
         this.canvas = document.getElementById('catLitterCanvas');

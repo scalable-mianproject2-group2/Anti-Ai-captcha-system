@@ -6,7 +6,7 @@ import time
 import re
 
 def solve_captcha():
-    print("🔍 Attacker 1 (Python DOM Bot) Starting...")
+    print(" Attacker 1 (Python DOM Bot) Starting...")
 
     # Start browser
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
