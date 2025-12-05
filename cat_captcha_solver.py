@@ -567,7 +567,7 @@ class CatLitterCaptchaSolver:
                     self.driver.quit()
                     self.driver = None
         
-        self.logger.error("❌ All attempts failed")
+        self.logger.error("All attempts failed")
         return False
     
     def close(self):
@@ -597,17 +597,17 @@ def main():
             solver = CatLitterCaptchaSolver(headless=True)
             success = solver.solve_captcha()
             if success:
-                print("🎉 CAPTCHA solved successfully!")
+                print("CAPTCHA solved successfully!")
             else:
-                print("❌ CAPTCHA solving failed")
+                print(" CAPTCHA solving failed")
                 
         elif choice == "2":
             solver = CatLitterCaptchaSolver(headless=False)
             success = solver.solve_captcha()
             if success:
-                print("🎉 CAPTCHA solved successfully!")
+                print(" CAPTCHA solved successfully!")
             else:
-                print("❌ CAPTCHA solving failed")
+                print(" CAPTCHA solving failed")
                 
         elif choice == "3":
             solver = CatLitterCaptchaSolver(headless=False)
